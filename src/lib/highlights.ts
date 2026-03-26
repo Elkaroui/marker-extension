@@ -536,29 +536,13 @@ export function renderStoredHighlights(highlights: StoredHighlight[]): number {
 
 export function getHighlightIdFromPoint(x: number, y: number): string | null {
   if (supportsCustomHighlights()) {
-    const position = document.caretPositionFromPoint?.(x, y);
-    if (position) {
-      for (const [id, range] of liveRanges) {
-        try {
-          if (range.isPointInRange(position.offsetNode, position.offset)) {
-            return id;
-          }
-        } catch {
-          // Ignore invalid points.
-        }
-      }
-    }
-
-    const caretRange = document.caretRangeFromPoint?.(x, y);
-    if (caretRange) {
-      for (const [id, range] of liveRanges) {
-        try {
-          if (range.isPointInRange(caretRange.startContainer, caretRange.startOffset)) {
-            return id;
-          }
-        } catch {
-          // Ignore invalid points.
-        }
+    for (const [id, range] of liveRanges) {
+      const rects = Array.from(range.getClientRects());
+      const isInsideRect = rects.some(
+        (rect) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom,
+      );
+      if (isInsideRect) {
+        return id;
       }
     }
 
