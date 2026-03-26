@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Aptos Display", "Segoe UI Variable Display", "Trebuchet MS", sans-serif;
+  --font-sans: "Aptos", "Segoe UI Variable Text", "Trebuchet MS", sans-serif;
+}
+
+:host {
+  all: initial;
+}
+
+.marker-root {
+  font-family: var(--font-sans);
+  color: #ecfeff;
+}
