@@ -36,6 +36,40 @@ const hiddenMenu: MenuState = {
   text: '',
 };
 
+function areSettingsEqual(a: PageState['settings'], b: PageState['settings']): boolean {
+  return (
+    a.defaultColor === b.defaultColor &&
+    a.customColors.length === b.customColors.length &&
+    a.customColors.every((color, index) => color === b.customColors[index])
+  );
+}
+
+function areHighlightsEqual(a: PageState['highlights'], b: PageState['highlights']): boolean {
+  return (
+    a.length === b.length &&
+    a.every((highlight, index) => {
+      const other = b[index];
+      return (
+        highlight.id === other.id &&
+        highlight.color === other.color &&
+        highlight.url === other.url &&
+        highlight.createdAt === other.createdAt &&
+        highlight.startXPath === other.startXPath &&
+        highlight.startOffset === other.startOffset &&
+        highlight.endXPath === other.endXPath &&
+        highlight.endOffset === other.endOffset &&
+        highlight.text === other.text &&
+        highlight.prefix === other.prefix &&
+        highlight.suffix === other.suffix
+      );
+    })
+  );
+}
+
+function arePageStatesEqual(a: PageState | null, b: PageState): boolean {
+  return !!a && a.urlKey === b.urlKey && areSettingsEqual(a.settings, b.settings) && areHighlightsEqual(a.highlights, b.highlights);
+}
+
 function instrumentHistory(onNavigate: () => void): () => void {
   const pushState = history.pushState;
   const replaceState = history.replaceState;
@@ -69,8 +103,10 @@ function ContentApp() {
   const [savedCustomColor, setSavedCustomColor] = useState(fallbackCustomColor);
   const [customEditorOpen, setCustomEditorOpen] = useState(false);
   const activeRangeRef = useRef<Range | null>(null);
+  const pageStateRef = useRef<PageState | null>(null);
   const currentUrlRef = useRef(window.location.href);
   const uiInteractingRef = useRef(false);
+  pageStateRef.current = pageState;
 
   const colors = useMemo(
     () => [...palette, { id: 'custom', label: 'Custom', value: savedCustomColor }],
@@ -211,9 +247,11 @@ function ContentApp() {
   async function syncPage(): Promise<PageState> {
     const state = await getPageState(window.location.href);
     renderStoredHighlights(state.highlights);
-    setPageState(state);
+    if (!arePageStatesEqual(pageStateRef.current, state)) {
+      setPageState(state);
+    }
     const savedCustom = state.settings.customColors[0] ?? fallbackCustomColor;
-    setSavedCustomColor(savedCustom);
+    setSavedCustomColor((current) => (current === savedCustom ? current : savedCustom));
     setCustomColor((current) => (current === fallbackCustomColor ? savedCustom : current));
     return state;
   }
